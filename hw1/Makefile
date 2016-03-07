@@ -17,3 +17,6 @@ $(PROG): $(OBJS)
 
 clean:
 	rm -rf $(OBJS) $(PROG)
+
+test: $(PROG)
+	./$(PROG) $(S) | awk -f eval.awk
