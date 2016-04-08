@@ -7,13 +7,27 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
+#define _TO_FILE_
+
+#ifdef _TO_FILE_
+#define RED
+#define BLUE
+#define CLEAR
+#define INIT_FILE() outfile = o_fopen("hijack.log", "a")
+#define DBG(...) o_fprintf(outfile, __VA_ARGS__)
+#define INFO(...) o_fprintf(outfile, __VA_ARGS__)
+
+FILE *outfile;
+#else
 #define RED "\033[0;31m"
 #define BLUE "\033[0;34m"
 #define CLEAR "\033[0m"
-
-#define find_origin_func(x) o_##x = dlsym(RTLD_NEXT, #x)
+#define INIT_FILE() do {} while(0)
 #define DBG(...) o_fprintf(stderr, __VA_ARGS__)
 #define INFO(...) o_fprintf(stderr, __VA_ARGS__)
+#endif
+
+#define find_origin_func(x) o_##x = dlsym(RTLD_NEXT, #x)
 
 static int (*o_fprintf)(FILE *, const char*, ...);
 static FILE* (*o_fopen)(const char*, const char*);
@@ -75,6 +89,8 @@ static void init(){
 	find_origin_func(fwrite);
 	find_origin_func(SSL_write);
 	find_origin_func(SSL_read);
+
+	INIT_FILE();
 }
 
 FILE *fopen(const char* a, const char* b){
