@@ -1,3 +1,5 @@
+SHELL = bash
+
 PROG = libhijack.so
 
 CC = gcc
@@ -9,7 +11,7 @@ LIBS = -ldl
 
 OBJS = hijack.o
 
-.PHONY: all clean test
+.PHONY: all clean test testSSL
 
 .c.o:
 	$(CC) $(CFLAGS) -c $? -o $@
@@ -23,9 +25,9 @@ clean:
 	rm -rf $(PROG) $(OBJS)
 
 test: $(PROG)
-	$(shell LD_PRELOAD=./$(PROG) wget http://rubygems.nos.ncu.edu.tw -O ./tmp.output)
+	LD_PRELOAD=./$(PROG) wget http://rubygems.nos.ncu.edu.tw -O ./tmp.output
 	rm -rf ./tmp.output
 
 testSSL: $(PROG)
-	$(shell LD_PRELOAD=./$(PROG) wget https://rubygems.nos.ncu.edu.tw -O ./tmp.output)
+	LD_PRELOAD=./$(PROG) wget https://rubygems.nos.ncu.edu.tw -O ./tmp.output
 	rm -rf ./tmp.output

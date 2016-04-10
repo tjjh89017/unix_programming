@@ -11,7 +11,7 @@ make
 Clean the object files and library.
 
 ```
-clean
+make clean
 ```
 
 Test the library using `wget` without SSL
