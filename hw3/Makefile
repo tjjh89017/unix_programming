@@ -1,11 +1,11 @@
 PROG = yosh
 CC = gcc
 LD = gcc
-CFLAGS = 
+CFLAGS = -D__DEBUG__
 LDFLAGS = 
 LIBS = 
 
-OBJS = 
+OBJS = main.o
 
 .PHONY: all test clean
 
