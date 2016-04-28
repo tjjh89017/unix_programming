@@ -1,9 +1,10 @@
 PROG = yosh
 CC = gcc
 LD = gcc
-CFLAGS = -D__DEBUG__
+CFLAGS = 
 LDFLAGS = 
 LIBS = 
+#CFLAGS += -D__DEBUG__
 
 OBJS = main.o
 

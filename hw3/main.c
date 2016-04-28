@@ -8,9 +8,9 @@
 #include <sys/types.h>
 
 #ifdef __DEBUG__
-#define DEBUG(...) fprintf(stderr, __VA_ARGS__);
+#define DEBUG(...) fprintf(stderr, __VA_ARGS__)
 #else
-#define DEBUG(...)
+#define DEBUG(...) do {} while(0)
 #endif
 
 #define prompt(user, hostname, path) printf("\033[92m[%s@%s %s]$\033[0m ", user, hostname, path)
