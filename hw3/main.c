@@ -13,7 +13,7 @@
 #define DEBUG(...)
 #endif
 
-#define prompt(x) printf("[user@host path]$ ")
+#define prompt(user, hostname, path) printf("\033[92m[%s@%s %s]$\033[0m ", user, hostname, path)
 #define MAX_SIZE 256
 #define IN 0
 #define OUT 1
@@ -31,13 +31,55 @@ int command(int input, int first, int last);
 
 char* args[512];
 int n = 0;
+char user[128];
+char hostname[128];
+char path[128];
 
-int main(){
+void init()
+{
+	// init user
+	strncpy(user, getenv("USER"), 128);
+	// init hostname
+	strncpy(hostname, getenv("HOSTNAME"), 128);
+	*strchr(hostname, '.') = '\0';
+	// init path
+	strncpy(path, strrchr(getenv("PWD"), '/') + 1, 128);
 
+	puts("Welcome to Yoda shell!");
+	puts("Finish my homework, have I?");
+	puts("");
+	printf("\033[93m");
+	puts("      8888888888  888    88888             ");
+	puts("     88     88   88 88   88  88            ");
+	puts("      8888  88  88   88  88888             ");
+	puts("         88 88 888888888 88   88           ");
+	puts("  88888888  88 88     88 88    888888      ");
+	puts("                                           ");
+	puts("  88  88  88   888    88888    888888      ");
+	puts("  88  88  88  88 88   88  88  88           ");
+	puts("  88 8888 88 88   88  88888    8888        ");
+	puts("   888  888 888888888 88   88     88       ");
+	puts("    88  88  88     88 88    8888888        ");
+	puts("\033[0m");
+
+	printf("\033[32m");
+	puts("           .--.                  Try not.    ");
+	puts(" ::\\`--._,'.::.`._.--'/::     Do or do not. ");
+	puts(" ::::.  ` __::__ '  .::::    There is no try.");
+	puts(" ::::::-:.`'..`'.:-::::::                    ");
+	puts(" ::::::::\\ `--' /::::::::              -Yoda");
+	puts("\033[0m");
+ 
+}
+
+int main()
+{
+
+	init();
 	char input_line[MAX_SIZE];
 
 	while(1){
-		prompt(0);
+		prompt(user, hostname, path);
 		if(!fgets(input_line, MAX_SIZE, stdin))
 			return 0;
 
