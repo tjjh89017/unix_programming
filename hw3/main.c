@@ -3,12 +3,20 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <fcntl.h>
 
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+
 
 #ifdef __DEBUG__
-#define DEBUG(...) fprintf(stderr, __VA_ARGS__)
+#define DEBUG(...) \
+do { \
+	fprintf(stderr, "\033[31m");\
+	fprintf(stderr, __VA_ARGS__); \
+	fprintf(stderr, "\033[0m");\
+} while(0)
 #else
 #define DEBUG(...) do {} while(0)
 #endif
@@ -34,6 +42,7 @@ int n = 0;
 char user[128];
 char hostname[128];
 char path[128];
+char *infile = NULL, *outfile = NULL;
 
 void init()
 {
@@ -168,7 +177,68 @@ int command(int input, int first, int last)
 		else{
 			dup2(input, STDIN_FILENO);
 		}
+	
+		//search for file
+		infile = NULL, outfile = NULL;
+		int i = 0, infile_no = -1, outfile_no = -1;
+		for(i = 0; i < 512 && args[i]; i++){
+			if(args[i][0] == '<'){
+				infile_no = i;
+			}
+			if(args[i][0] == '>'){
+				outfile_no = i;
+			}
+		}
+		if(infile_no >= 0){
+			args[i] = args[infile_no];
+			args[i + 1] = args[infile_no + 1];
+			args[infile_no] = NULL;
+			infile = args[i + 1];
+			if(args[i][1] != '\0'){
+				infile = args[i] + 1;
+			}
+			i = i + 2;
+		}
+		if(outfile_no >= 0){
+			args[i] = args[outfile_no];
+			args[i + 1] = args[outfile_no + 1];
+			args[outfile_no] = NULL;
+			outfile = args[i + 1];
+			if(args[i][1] != '\0'){
+				infile = args[i] + 1;
+			}
+			i = i + 2;
+		}
 
+
+		// file
+		if(infile){
+			DEBUG("testing command infile: %s\n", infile);
+			int infd = open(infile, O_RDONLY);
+			if(infd < 0){
+				fprintf(stderr, "Error!\n");
+				_exit(EXIT_FAILURE);
+			}
+			dup2(infd, STDIN_FILENO);
+			close(infd);
+			infile = NULL;
+			DEBUG("testing command infile\n");
+		}
+
+		if(outfile){
+			DEBUG("testing command outfile: %s\n", outfile);
+			int outfd = open(outfile, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+			if(outfd < 0){
+				fprintf(stderr, "Error!\n");
+				_exit(EXIT_FAILURE);
+			}
+			dup2(outfd, STDOUT_FILENO);
+			close(outfd);
+			outfile = NULL;
+			DEBUG("testing command outfile\n");
+		}
+
+		DEBUG("testing execvp\n");
 		if(execvp(args[0], args) == -1)
 			_exit(EXIT_FAILURE);
 	}
@@ -181,6 +251,4 @@ int command(int input, int first, int last)
 		close(pipes[IN]);
 
 	return pipes[IN];
-	
-	return 0;
 }
