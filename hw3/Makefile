@@ -4,7 +4,7 @@ LD = gcc
 CFLAGS = 
 LDFLAGS = 
 LIBS = 
-CFLAGS += -D__DEBUG__
+#CFLAGS += -D__DEBUG__
 
 OBJS = main.o
 
