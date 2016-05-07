@@ -41,6 +41,8 @@ int command(int input, int first, int last);
 void interrupt_handler(int sig);
 int cd();
 void update_prompt();
+int export();
+int unset();
 
 char* args[512];
 int n = 0;
@@ -128,6 +130,10 @@ int run(char *cmd, int input, int first, int last)
 			exit(0);
 		else if(strcmp(args[0], "cd") == 0)
 			return cd();
+		else if(strcmp(args[0], "export") == 0)
+			return export();
+		else if(strcmp(args[0], "unset") == 0)
+			return unset();
 		n++;
 		int ret = command(input, first, last);
 		globfree(&results);
@@ -388,3 +394,28 @@ void update_prompt()
 	strncpy(path, strrchr(getenv("PWD"), '/') + 1, 128);
 }
 
+int export()
+{
+	char *variable = args[1];
+	char value[1024] = "";
+	int offset = 0;
+	if(args[2] != NULL){
+		offset += snprintf(value, 1024 - offset, "%s", args[2]);
+		for(int i = 3; args[i] != NULL; i++){
+			offset += snprintf(value + offset, 1024 - offset, " %s", args[i]);
+		}
+	}
+	DEBUG("value: %s\n", value);
+
+	setenv(variable, value, 1);
+	return 0;
+}
+
+int unset()
+{
+	for(int i = 1; args[i] != NULL; i++){
+		DEBUG("unset variable: %s\n", args[i]);
+		unsetenv(args[i]);
+	}
+	return 0;
+}
