@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -36,6 +37,9 @@ void split(char *cmd);
 char *skipwhite(char *s);
 void cleanup(int n);
 int command(int input, int first, int last);
+void interrupt_handler(int sig);
+int cd();
+void update_prompt();
 
 char* args[512];
 int n = 0;
@@ -46,13 +50,7 @@ char *infile = NULL, *outfile = NULL;
 
 void init()
 {
-	// init user
-	strncpy(user, getenv("USER"), 128);
-	// init hostname
-	strncpy(hostname, getenv("HOSTNAME"), 128);
-	*strchr(hostname, '.') = '\0';
-	// init path
-	strncpy(path, strrchr(getenv("PWD"), '/') + 1, 128);
+	update_prompt();
 
 	puts("Welcome to Yoda shell!");
 	puts("Finish my homework, have I?");
@@ -78,6 +76,11 @@ void init()
 	puts(" ::::::-:.`'..`'.:-::::::                    ");
 	puts(" ::::::::\\ `--' /::::::::              -Yoda");
 	puts("\033[0m");
+
+	signal(SIGTTOU, SIG_IGN);
+	signal(SIGTTIN, SIG_IGN);
+	signal(SIGINT, interrupt_handler);
+	//signal(SIGTSTP, backToShell);
  
 }
 
@@ -89,8 +92,10 @@ int main()
 
 	while(1){
 		prompt(user, hostname, path);
-		if(!fgets(input_line, MAX_SIZE, stdin))
+		if(!fgets(input_line, MAX_SIZE, stdin)){
+			puts("");
 			return 0;
+		}
 
 		int input = 0;
 		int first = 1;
@@ -116,9 +121,15 @@ int main()
 int run(char *cmd, int input, int first, int last)
 {
 	split(cmd);
-	
-	n++;
-	return command(input, first, last);
+	if(args[0] != NULL){
+		if(strcmp(args[0], "exit") == 0)
+			exit(0);
+		else if(strcmp(args[0], "cd") == 0)
+			return cd();
+		n++;
+		return command(input, first, last);
+	}
+	return 0;
 }
 
 char *skipwhite(char *s)
@@ -178,6 +189,14 @@ int command(int input, int first, int last)
 			dup2(input, STDIN_FILENO);
 		}
 	
+		signal(SIGTTOU, SIG_DFL);
+		signal(SIGTTIN, SIG_DFL);
+		signal(SIGCHLD, SIG_DFL);
+		signal(SIGINT, SIG_DFL);
+		signal(SIGQUIT, SIG_DFL);
+		signal(SIGTSTP, SIG_DFL);
+		signal(SIGCONT, SIG_DFL);
+
 		//search for file
 		infile = NULL, outfile = NULL;
 		int i = 0, infile_no = -1, outfile_no = -1;
@@ -251,4 +270,59 @@ int command(int input, int first, int last)
 		close(pipes[IN]);
 
 	return pipes[IN];
+}
+
+void interrupt_handler(int sig)
+{
+	puts("");
+	prompt(user, hostname, path);
+	fflush(stdout);
+	return;
+}
+
+int cd()
+{
+	char path[1024];
+	struct stat info;
+
+	// cd to home
+	DEBUG("path: %s\n", args[1]);
+	if(args[1] == NULL){
+		setenv("OLDPWD", getenv("PWD"), 1);
+		chdir(getenv("HOME"));
+		setenv("PWD", getenv("HOME"), 1);
+		update_prompt();
+		return 0;
+	}
+	else if(strcmp(args[1], "-") == 0){
+		strncpy(path, getenv("PWD"), 1024);
+		chdir(getenv("OLDPWD"));
+		setenv("PWD", getenv("OLDPWD"), 1);
+		setenv("OLDPWD", path, 1);
+		update_prompt();
+		return 0;
+	}
+
+	realpath(args[1], path);
+	DEBUG("realpath: %s\n", path);
+
+	if(chdir(args[1])){
+		fprintf(stderr, "-yosh: cd: %s: No such file or directory\n", args[1]);
+		return 1;
+	}
+	setenv("OLDPWD", getenv("PWD"), 1);
+	setenv("PWD", path, 1);
+	update_prompt();
+	return 0;
+}
+
+void update_prompt()
+{
+	// init user
+	strncpy(user, getenv("USER"), 128);
+	// init hostname
+	strncpy(hostname, getenv("HOSTNAME"), 128);
+	*strchr(hostname, '.') = '\0';
+	// init path
+	strncpy(path, strrchr(getenv("PWD"), '/') + 1, 128);
 }
