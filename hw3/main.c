@@ -22,7 +22,7 @@ do { \
 #define DEBUG(...) do {} while(0)
 #endif
 
-#define prompt(user, hostname, path) printf("\033[92m[%s@%s %s]$\033[0m ", user, hostname, path)
+#define prompt(user, hostname, path) printf("\033[92m[%s@%s %s(Yosh)]$\033[0m ", user, hostname, path)
 #define MAX_SIZE 256
 #define IN 0
 #define OUT 1
@@ -79,8 +79,8 @@ void init()
 
 	signal(SIGTTOU, SIG_IGN);
 	signal(SIGTTIN, SIG_IGN);
+	signal(SIGTSTP, SIG_DFL);
 	signal(SIGINT, interrupt_handler);
-	//signal(SIGTSTP, backToShell);
  
 }
 
@@ -162,8 +162,7 @@ void split(char *cmd)
 
 void cleanup(int n)
 {
-	int t = n;
-	while(t--)
+	while(n--)
 		wait(NULL);
 }
 
@@ -258,8 +257,10 @@ int command(int input, int first, int last)
 		}
 
 		DEBUG("testing execvp\n");
-		if(execvp(args[0], args) == -1)
+		if(execvp(args[0], args) == -1){
+			fprintf(stderr, "-yosh: %s: command not found\n", args[0]);	
 			_exit(EXIT_FAILURE);
+		}
 	}
 
 	if(input != 0)
@@ -274,9 +275,11 @@ int command(int input, int first, int last)
 
 void interrupt_handler(int sig)
 {
-	puts("");
-	prompt(user, hostname, path);
-	fflush(stdout);
+	if(n == 0){
+		puts("");
+		prompt(user, hostname, path);
+		fflush(stdout);
+	}
 	return;
 }
 
@@ -326,3 +329,4 @@ void update_prompt()
 	// init path
 	strncpy(path, strrchr(getenv("PWD"), '/') + 1, 128);
 }
+
