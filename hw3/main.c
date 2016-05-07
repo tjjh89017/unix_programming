@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <glob.h>
 
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -33,7 +34,7 @@ do { \
 // parse command
 // exec command
 int run(char *cmd, int input, int first, int last);
-void split(char *cmd);
+void split(char *cmd, glob_t *);
 char *skipwhite(char *s);
 void cleanup(int n);
 int command(int input, int first, int last);
@@ -120,14 +121,16 @@ int main()
 
 int run(char *cmd, int input, int first, int last)
 {
-	split(cmd);
+	glob_t results;
+	split(cmd, &results);
 	if(args[0] != NULL){
 		if(strcmp(args[0], "exit") == 0)
 			exit(0);
 		else if(strcmp(args[0], "cd") == 0)
 			return cd();
 		n++;
-		return command(input, first, last);
+		int ret = command(input, first, last);
+		globfree(&results);
 	}
 	return 0;
 }
@@ -139,15 +142,46 @@ char *skipwhite(char *s)
 	return s;
 }
 
-void split(char *cmd)
+static int globerr(const char *path, int eerrno)
 {
+	fprintf(stderr, "%s: %s\n", path, strerror(eerrno));
+	return 0;
+}
+
+void split(char *cmd, glob_t *results)
+{
+	int flags = 0;
 	cmd = skipwhite(cmd);
 	char *next = strchr(cmd, ' ');
-	int i = 0;
+	int i = 0, j = 0;
 	while(next != NULL){
 		next[0] = '\0';
 		args[i] = cmd;
-		i++;
+
+		// expand * ?
+		//glob_t results;
+		int ret;
+		if(ret = glob(cmd, flags, globerr, results)){
+			// failed
+			DEBUG("glob failed: %d\n", ret);
+			if(ret == GLOB_NOMATCH)
+				DEBUG("GLOB_NOMATCH\n");
+			if(ret == GLOB_ABORTED)
+				DEBUG("GLOB_ABORTED\n");
+			if(ret == GLOB_NOSPACE)
+				DEBUG("GLOB_NOSPACE\n");
+			i++;
+		}
+
+		flags |= GLOB_APPEND;
+		DEBUG("results.gl_pathc = %d\n", results->gl_pathc);
+		for(; j < results->gl_pathc; j++){
+			DEBUG("results.gl_pathv[%d] = %s\n", j, results->gl_pathv[j]);
+			args[i] = results->gl_pathv[j];
+			i++;
+		}
+		//globfree(&results);
+
 		cmd = skipwhite(next + 1);
 		next = strchr(cmd, ' ');
 	}
@@ -155,7 +189,27 @@ void split(char *cmd)
 		args[i] = cmd;
 		next = strchr(cmd, '\n');
 		next[0] = '\0';
-		i++;
+		// expand * ?
+		//glob_t results;
+		int ret;
+		if(ret = glob(cmd, flags, globerr, results)){
+			// failed
+			DEBUG("glob failed: %d\n", ret);
+			if(ret == GLOB_NOMATCH)
+				DEBUG("GLOB_NOMATCH\n");
+			if(ret == GLOB_ABORTED)
+				DEBUG("GLOB_ABORTED\n");
+			if(ret == GLOB_NOSPACE)
+				DEBUG("GLOB_NOSPACE\n");
+			i++;
+		}
+		DEBUG("results.gl_pathc = %d\n", results->gl_pathc);
+		for(; j < results->gl_pathc; j++){
+			DEBUG("results.gl_pathv[%d] = %s\n", j, results->gl_pathv[j]);
+			args[i] = results->gl_pathv[j];
+			i++;
+		}
+		//globfree(&results);
 	}
 	args[i] = NULL;
 }
@@ -254,6 +308,10 @@ int command(int input, int first, int last)
 			close(outfd);
 			outfile = NULL;
 			DEBUG("testing command outfile\n");
+		}
+
+		for(int x = 0; args[x] != NULL; x++){
+			DEBUG("args[%d] = %s\n", x, args[x]);
 		}
 
 		DEBUG("testing execvp\n");
