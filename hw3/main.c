@@ -389,7 +389,9 @@ void update_prompt()
 	strncpy(user, getlogin(), 128);
 	// init hostname
 	gethostname(hostname, 128);
-	*strchr(hostname, '.') = '\0';
+	char *tmp = strchr(hostname, '.');
+	if(tmp)
+		*tmp = '\0';
 	// init path
 	strncpy(path, strrchr(getenv("PWD"), '/') + 1, 128);
 }
