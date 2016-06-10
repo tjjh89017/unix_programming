@@ -34,5 +34,6 @@
 # Exec
 main
 yosh
+dserv
 
 .DS_Store
