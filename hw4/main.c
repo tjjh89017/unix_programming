@@ -28,8 +28,11 @@ int main(int argc, char *argv[]){
 
 	struct event_base *base;
 	struct evhttp *httpd;
+	struct event_config *cfg = event_config_new();
 
-	base = event_base_new();
+	event_config_avoid_method(cfg, "epoll");
+
+	base = event_base_new_with_cfg(cfg);
 	httpd = evhttp_new(base);
 	evhttp_set_gencb(httpd, request_handler, base);
 
