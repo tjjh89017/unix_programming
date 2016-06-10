@@ -98,7 +98,7 @@ void request_handler(struct evhttp_request *request, void *args)
 	 */
 	// check MIME
 	if(file_stat.st_size){
-		magic = magic_open(MAGIC_MIME_TYPE);
+		magic = magic_open(MAGIC_MIME_TYPE | MAGIC_SYMLINK);
 		magic_load(magic, NULL);
 		magic_compile(magic, NULL);
 		mime = magic_file(magic, filename);
