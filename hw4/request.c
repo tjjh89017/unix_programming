@@ -103,7 +103,7 @@ void request_handler(struct evhttp_request *request, void *args)
 		magic_compile(magic, NULL);
 		mime = magic_file(magic, filename);
 		evhttp_add_header(headers, "Content-Type", mime);
-		struct event *read_file = event_new(base, fd, EV_READ | EV_PERSIST, file_handler, request);
+		struct event *read_file = event_new(base, fd, EV_READ, file_handler, request);
 		event_add(read_file, NULL);
 	}
 	else{
