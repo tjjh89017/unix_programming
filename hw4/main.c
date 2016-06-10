@@ -32,7 +32,7 @@ int main(int argc, char *argv[]){
 
 	event_config_avoid_method(cfg, "epoll");
 
-	base = event_base_new_with_cfg(cfg);
+	base = event_base_new_with_config(cfg);
 	httpd = evhttp_new(base);
 	evhttp_set_gencb(httpd, request_handler, base);
 
